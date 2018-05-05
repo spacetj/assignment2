@@ -3,24 +3,53 @@ package com.Controller;
 import com.Model.States;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public class MiniNet extends Application {
 
     public final static String DIVIDER = "=========================";
     private static Menu menu;
-    private static Scene activeScene;
+    private static Queue<String> notifications = new LinkedList<>();
+
+    @FXML
+    Rectangle notificationBox;
+
+    @FXML
+    Text notificationText;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("../View/mininet.fxml"));
-
         primaryStage.setTitle(menu.getTitle());
+        List<Double> offsets = new ArrayList<>();
+        primaryStage.initStyle(StageStyle.TRANSPARENT);
+
+        root.setOnMouseDragEntered(e -> {
+            offsets.add(e.getSceneX());
+            offsets.add(e.getSceneY());
+        });
+
+        root.setOnMouseDragged(e -> {
+            primaryStage.setX(offsets.get(0));
+            primaryStage.setY(offsets.get(1));
+        });
 
         Scene mainScene = new Scene(root, 500, 400);
         mainScene.setFill(Color.TRANSPARENT);
