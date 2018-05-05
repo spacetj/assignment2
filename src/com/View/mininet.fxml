@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
+
+<GridPane alignment="center" hgap="10" vgap="10" xmlns="http://javafx.com/javafx/8.0.112" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Controller.MiniNet">
+   <columnConstraints>
+      <ColumnConstraints />
+   </columnConstraints>
+   <rowConstraints>
+      <RowConstraints />
+   </rowConstraints>
+   <children>
+      <AnchorPane prefHeight="400.0" prefWidth="500.0">
+         <children>
+            <AnchorPane prefHeight="350.0" prefWidth="500.0">
+                <children>
+                    <AnchorPane prefHeight="400.0" prefWidth="450.0">
+                        <children>
+                            <Label layoutX="201.0" layoutY="24.0" text="MiniNet">
+                                <font>
+                                    <Font size="24.0" />
+                                </font>
+                            </Label>
+                            <TabPane layoutY="54.0" prefHeight="392.0" prefWidth="490.0" tabClosingPolicy="UNAVAILABLE">
+                                <tabs>
+                                    <Tab text="Untitled Tab 1">
+                                        <content>
+                                            <fx:include fx:id="mainMenu" source="main_menu.fxml" />
+                                        </content>
+                                    </Tab>
+                                    <Tab text="Untitled Tab 2">
+                                        <content>
+                                            <fx:include fx:id="" source="add_user.fxml" />
+                                        </content>
+                                    </Tab>
+                                </tabs>
+                            </TabPane>
+                        </children>
+                    </AnchorPane>
+                </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+   </children>
+</GridPane>
