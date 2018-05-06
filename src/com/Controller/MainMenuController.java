@@ -1,30 +1,34 @@
 package com.Controller;
 
+import com.MiniNet;
 import com.Model.States;
 import com.Model.User;
+import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 
+import java.net.URL;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.Scanner;
 
+import static com.MiniNet.getStore;
+
 /**
- * MainMenu is the initial user interface that is displayed when MiniNet is run.
+ * MainMenuController is the initial user interface that is displayed when MiniNet is run.
  *
  * @version 1.0.0 22nd March 2018
  * @author Tejas Cherukara
  */
-public class MainMenu implements Menu {
+public class MainMenuController implements Initializable {
 
-    public MainMenu() {}
+    public MainMenuController() {}
 
     /**
      * Main menu options.
      */
-    @Override
     public Scene getMenu() {
         System.out.println("\nMain Menu:");
-        System.out.println(MiniNet.DIVIDER);
         System.out.println("1. List all users");
         System.out.println("2. Add new user");
         System.out.println("3. Are these two friends?");
@@ -36,7 +40,6 @@ public class MainMenu implements Menu {
      * Parses user actions for main menu.
      * @param input
      */
-    @Override
     public void doAction(Scanner input) {
         System.out.print("Select number from menu: ");
         String action = input.nextLine();
@@ -56,7 +59,6 @@ public class MainMenu implements Menu {
                     selectUser(input);
                     break;
                 default:
-                    defaultAction(actionInt);
                     break;
             }
         } else {
@@ -64,7 +66,6 @@ public class MainMenu implements Menu {
         }
     }
 
-    @Override
     public String getTitle() {
         return "Main Menu";
     }
@@ -108,7 +109,7 @@ public class MainMenu implements Menu {
             name = input.nextLine();
             user = getStore().getUserWithName(name);
 
-            if (isSpecialInput(name)) {
+            if (name.endsWith("s")) {
                 specialInput = true;
             }
 
@@ -118,7 +119,6 @@ public class MainMenu implements Menu {
             getStore().setSelectedUser(user.get());
             MiniNet.switchState(States.SELECT_USER);
         } else {
-            checkSpecialInput(name);
         }
     }
 
@@ -136,27 +136,17 @@ public class MainMenu implements Menu {
             System.out.println("Enter the name of user:");
             userOne = input.nextLine();
             user1 = getStore().getUserWithName(userOne);
-            if(isSpecialInput(userOne)){
                 specialInput = true;
-            }
         } while(!user1.isPresent() || specialInput);
-
-        //Check if the back / exit / help input is given.
-        if(specialInput){
-            checkSpecialInput(userOne);
-        }
 
         do{
             System.out.println("Enter the name of second user:");
             userTwo = input.nextLine();
             user2 = getStore().getUserWithName(userTwo);
-            if(isSpecialInput(userTwo)){
                 specialInput = true;
-            }
         } while(!user2.isPresent() || specialInput);
 
         if(specialInput){
-            checkSpecialInput(userOne);
         } else {
             if (user1.get().getUserRelation(user2.get()).isPresent()) {
                 System.out.println(user2.get().getName()+" and "+user1.get().getName()+" has a relation.");
@@ -164,6 +154,11 @@ public class MainMenu implements Menu {
                 System.out.println("\n\nThey are not friends.\n");
             }
         }
+
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
 
     }
 }

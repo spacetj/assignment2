@@ -28,5 +28,18 @@ public enum RelationType{
                 return null;
         }
     }
+
+    public static String getString(RelationType relationType){
+        switch (relationType){
+            case GUARDIAN: return "parent";
+            case COPARENT: return "couple";
+            case FRIEND: return "friends";
+            case CLASSMATES: return "classmates";
+            case COLLEAGUES: return "colleagues";
+            default:
+                System.out.println("Unknown relation");
+                return null;
+        }
+    }
 }
 

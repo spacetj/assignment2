@@ -1,38 +1,39 @@
 package com.Controller;
 
 
+import com.MiniNet;
 import com.Model.States;
 import com.Model.RelationType;
 import com.Model.User;
 import com.Services.UserFactory;
+import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Scanner;
+import java.net.URL;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.MiniNet.getStore;
+
 /**
- * AddUserMenu is the menu used to add a new user.
+ * AddUserController is the menu used to add a new user.
  *
  * @version 1.0.0 22nd March 2018
  * @author Tejas Cherukara
  */
-public class AddUserMenu implements Menu {
+public class AddUserController implements Initializable {
 
-    public AddUserMenu() {
+    public AddUserController() {
     }
 
     /**
      * Add User menu options
      */
-    @Override
     public Scene getMenu() {
         GridPane pane = new GridPane();
 
@@ -56,21 +57,18 @@ public class AddUserMenu implements Menu {
      *
      * @param input
      */
-    @Override
     public void doAction(Scanner input) {
 
         String name;
         do {
             System.out.print("Enter name (must be unique): ");
             name = input.nextLine();
-            checkSpecialInput(name);
         } while (Objects.equals(name, "") || Objects.equals(name, " ") || !getStore().uniqueName(name));
 
         String age;
         do {
             System.out.print("Enter age (must be number): ");
             age = input.nextLine();
-            checkSpecialInput(age);
         } while (!MiniNet.isInputInt(age) || Integer.parseInt(age) < 0);
 
         Integer ageInt = Integer.parseInt(age);
@@ -89,7 +87,6 @@ public class AddUserMenu implements Menu {
         MiniNet.switchState(States.MAIN_MENU);
     }
 
-    @Override
     public String getTitle() {
         return "Add New User";
     }
@@ -116,13 +113,9 @@ public class AddUserMenu implements Menu {
                 System.out.print("Enter name of guardian 1: ");
                 guardianOneName = input.nextLine();
                 guardianOne = getStore().getUserWithName(guardianOneName);
-                if (isSpecialInput(guardianOneName)) {
-                    break;
-                }
             } while (!guardianOne.isPresent());
 
             if (!guardianOne.isPresent()) {
-                checkSpecialInput(guardianOneName);
             }
 
             do {//Check if the parent 1 already has a coparent assciated with them.
@@ -135,9 +128,6 @@ public class AddUserMenu implements Menu {
                     System.out.print("Enter name of guardian 2 (Cannot be same user as guardian 1): ");
                     guardianTwoName = input.nextLine();
                     guardianTwo = getStore().getUserWithName(guardianTwoName);
-                    if (isSpecialInput(guardianTwoName)) {
-                        break;
-                    }
                 }
             } while (!guardianTwo.isPresent() || guardianTwo.get() == guardianOne.get());
 
@@ -147,7 +137,6 @@ public class AddUserMenu implements Menu {
                 );
             } else {
                 System.out.println("\n\n Error creating user.\n\n");
-                checkSpecialInput(guardianTwoName);
             }
         } else {
             System.out.println("\nNeed at least 2 adults to add a young adult.\n");
@@ -169,6 +158,11 @@ public class AddUserMenu implements Menu {
         System.out.println("\n\n" + guardianOne.getName() + "'s partner is " + guardianTwo.get().getName());
         System.out.println(guardianTwo.get().getName() + " is automatically selected as second guardian.");
         return guardianTwo;
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+
     }
 }
 

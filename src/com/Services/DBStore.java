@@ -1,10 +1,13 @@
 package com.Services;
 
+import com.Model.RelationType;
 import com.Model.User;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -20,17 +23,78 @@ public class DBStore implements UserStore {
     private static final String SELECT_ALL_RELATIONS = "SELECT user_a, user_b, relation FROM Relations";
     private static final String INSERT_PERSON = "INSERT INTO People(name, profile_picture, status, gender, age, state)" +
             " VALUES (?, ?, ?, ?, ?, ?)";
-    public static final String DELETE_PERSON = "DELETE FROM People where name = ?";
-    public static final String UPDATE_PERSON = "UPDATE People SET profile_picture = ?, status = ?, state = ? WHERE name = ?";
+    private static final String INSERT_RELATION = "INSERT INTO Relations(user_a, user_b, relation) VALUES (?, ?, ?);";
+    private static final String DELETE_PERSON = "DELETE FROM People where name = ?";
+    private static final String UPDATE_PERSON = "UPDATE People SET profile_picture = ?, status = ?, state = ? WHERE name = ?";
+    private static final String EMPTY_PERSON = "DELETE FROM People";
+    private static final String EMPTY_RELATIONS = "DELETE FROM Relations;";
+    private static final String PEOPLE_FILE = "people.txt";
+    private static final String RELATIONS_FILE = "relations.txt";
     private static List<User> users = new ArrayList<>();
     private User selectedUser = null;
 
 
     public static DBStore getInstance() throws SQLException {
-        if (users.isEmpty()) {
-            connect();
+
+        File f = new File(ASSETS_FOLDER+PEOPLE_FILE);
+
+        if(f.exists() && !f.isDirectory()){
+            repopulateTables();
         }
+
         return instance;
+    }
+
+    private static void repopulateTables() throws SQLException {
+        emptyTables();
+        List<List<String>> relations;
+
+        try {
+            relations = StoreUtils.readFile(RELATIONS_FILE);
+        } catch (IOException e1) {
+            relations = Collections.emptyList();
+        }
+
+        List<List<String>> userFile = null;
+        try (Connection conn = getConnection()){
+            userFile = StoreUtils.readFile(PEOPLE_FILE);
+            users = StoreUtils.parseUsers(userFile, relations);
+            users.forEach(o -> {
+                o.getRelationships().forEach(rel -> {
+                    try(PreparedStatement pstmt = conn.prepareStatement(INSERT_RELATION)){
+                        pstmt.setString(1, o.getName());
+                        pstmt.setString(2, rel.getUser().getName());
+                        pstmt.setString(3, RelationType.getString(rel.getRelation()));
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
+                    try(PreparedStatement pstmt = conn.prepareStatement(INSERT_PERSON)){
+                        pstmt.setString(1, o.getName());
+                        pstmt.setString(2, o.getProfilePicture());
+                        pstmt.setString(3, o.getStatus());
+                        pstmt.setString(4, o.getGender());
+                        pstmt.setInt(5, o.getAge());
+                        pstmt.setString(6, o.getResidentialState());
+                        pstmt.executeUpdate();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                });
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void emptyTables() {
+        try(Connection conn = getConnection();
+            Statement stmt = conn.createStatement()){
+            stmt.executeQuery(EMPTY_PERSON);
+            stmt.executeQuery(EMPTY_RELATIONS);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private static Connection getConnection() {

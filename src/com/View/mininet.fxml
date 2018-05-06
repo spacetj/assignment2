@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Rectangle?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<GridPane alignment="center" hgap="10" vgap="10" xmlns="http://javafx.com/javafx/8.0.112" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Controller.MiniNet">
+<GridPane alignment="center" hgap="10" vgap="10" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Controller.HomeController">
    <columnConstraints>
       <ColumnConstraints />
    </columnConstraints>
@@ -17,24 +20,61 @@
       <RowConstraints />
    </rowConstraints>
    <children>
-      <SplitPane dividerPositions="0.2" orientation="VERTICAL" prefHeight="400.0" prefWidth="500.0">
-        <items>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0" style="-fx-background-color: #821628;">
+    <AnchorPane prefHeight="500.0" prefWidth="600.0" style="-fx-background-color: transparent;">
+    <children>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="80.0" prefWidth="600.0" style="-fx-background-color: #821628;">
                <children>
                   <Text fill="#c3dfe0" layoutX="13.0" layoutY="51.0" stroke="#1b1a1a" strokeType="OUTSIDE" text="MiniNet">
                      <font>
                         <Font name="System Bold" size="36.0" />
                      </font></Text>
-                  <AnchorPane layoutX="156.0" layoutY="20.0" prefHeight="34.0" prefWidth="334.0">
+                  <Pane layoutX="275.0" prefHeight="80.0" prefWidth="325.0">
                      <children>
-                        <Rectangle fx:id="notificationBox" arcHeight="5.0" arcWidth="5.0" fill="#859358" height="24.0" layoutX="72.0" layoutY="5.0" stroke="BLACK" strokeType="INSIDE" visible="false" width="256.0" />
-                        <Text fx:id="notificationText" layoutX="74.0" layoutY="22.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" textAlignment="CENTER" visible="false" wrappingWidth="248.21875" />
+                         <VBox fx:id="homePageButton" alignment="CENTER" onMouseClicked="#mainMenuClicked" prefHeight="70.0" prefWidth="80.0">
+                             <children>
+                                 <ImageView fx:id="mainMenuIcon" fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
+                                     <image>
+                                         <Image url="@../../../assets/home_page.png" />
+                                     </image>
+                                 </ImageView>
+                              <Rectangle fx:id="homePageActive" arcHeight="5.0" arcWidth="5.0" fill="#c3dfe0" height="5.0" stroke="BLACK" strokeType="INSIDE" width="80.0" />
+                             </children>
+                         </VBox>
+                         <VBox fx:id="userProfileButton" alignment="CENTER" layoutX="120.0" onMouseClicked="#userProfileClicked" prefHeight="70.0" prefWidth="80.0">
+                             <children>
+                                 <ImageView fx:id="userProfileIcon" fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
+                                     <image>
+                                         <Image url="@../../../assets/user_profile.png" />
+                                     </image>
+                                 </ImageView>
+                                 <Rectangle fx:id="userProfileActive" arcHeight="5.0" arcWidth="5.0" fill="#c3dfe0" height="5.0" stroke="BLACK" strokeType="INSIDE" visible="false" width="80.0" />
+                             </children>
+                         </VBox>
+                         <VBox alignment="CENTER" layoutX="240.0" onMouseClicked="#addUserClicked" prefHeight="70.0" prefWidth="80.0">
+                             <children>
+                                 <ImageView fx:id="addUserIcon" fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
+                                     <image>
+                                         <Image url="@../../../assets/add_user.png" />
+                                     </image>
+                                 </ImageView>
+                                 <Rectangle fx:id="addUserActive" arcHeight="5.0" arcWidth="5.0" fill="#c3dfe0" height="5.0" stroke="BLACK" strokeType="INSIDE" visible="false" width="80.0" />
+                             </children>
+                         </VBox>
                      </children>
-                  </AnchorPane>
+                  </Pane>
                </children>
             </AnchorPane>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0" />
-        </items>
-      </SplitPane>
+        <AnchorPane fx:id="mainMenuPane" layoutY="90.0" minHeight="0.0" minWidth="0.0" prefHeight="410.0" prefWidth="600.0" style="-fx-background-color: white;">
+            <fx:include fx:id="mainMenuFile" source="main_menu.fxml" />
+        </AnchorPane>
+          <AnchorPane fx:id="addUserPane" layoutY="90.0" minHeight="0.0" minWidth="0.0" prefHeight="410.0" prefWidth="600.0" style="-fx-background-color: white;" visible="false">
+              <fx:include fx:id="addUserFile" source="add_user.fxml" />
+          </AnchorPane>
+        <AnchorPane fx:id="userProfilePane" layoutY="90.0" minHeight="0.0" minWidth="0.0" prefHeight="410.0" prefWidth="600.0" style="-fx-background-color: white;" visible="false">
+            <fx:include fx:id="userProfileFile" source="user_profile.fxml" />
+        </AnchorPane>
+
+    </children>
+    </AnchorPane>
    </children>
 </GridPane>

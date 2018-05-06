@@ -6,11 +6,13 @@ import com.Model.RelationType;
 import com.Model.Relationship;
 import com.Model.User;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.Services.UserStore.ASSETS_FOLDER;
 
 /**
  * Created by TJ on 28/4/18.
@@ -85,6 +87,7 @@ public class StoreUtils {
                 .filter(rel -> Objects.equals(rel.get(2), RelationType.PARENT))
                 .filter(rel -> Objects.equals(rel.get(0), usr.get(0)) || Objects.equals(rel.get(1), usr.get(0)))
                 .collect(Collectors.toList());
+
         if (relatedParents.size() < 2) {
             System.out.println(usr.get(0) + " does not have 2 parents");
             return Optional.<User>empty();
@@ -100,5 +103,20 @@ public class StoreUtils {
 
         validChildren.add(usr);
         return Optional.empty();
+    }
+
+    static List<List<String>> readFile(String fileName) throws IOException {
+
+        List<String> lines= Files.readAllLines(Paths.get(ASSETS_FOLDER+fileName));
+
+        return lines.stream()
+                .map(o -> {
+                    StringTokenizer tokenizer = new StringTokenizer(o,",");
+                    List<String> data = new ArrayList<>();
+                    while(tokenizer.hasMoreTokens()){
+                        data.add(tokenizer.nextToken().trim());
+                    }
+                    return data;
+                }).collect(Collectors.toList());
     }
 }

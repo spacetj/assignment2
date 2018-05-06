@@ -1,34 +1,39 @@
 package com.Controller;
 
+import com.MiniNet;
 import com.Model.Exceptions.*;
 import com.Model.RelationType;
 import com.Model.Relationship;
 import com.Model.States;
 import com.Model.User;
 import com.Services.UserFactory;
+import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.MiniNet.getStore;
+
 /**
- * UserMenu has the menu options once a user is selected.
+ * UserProfileController has the menu options once a user is selected.
  *
  * @version 1.0.0 22nd March 2018
  * @author Tejas Cherukara
  */
-public class UserMenu implements Menu {
+public class UserProfileController implements Initializable {
 
-    public UserMenu() {}
+    public UserProfileController() {}
 
     /**
      * The options available when a user is selected.
      */
-    @Override
     public Scene getMenu() {
         GridPane pane = new GridPane();
 //        pane.getChildren().add(1, );
@@ -70,7 +75,6 @@ public class UserMenu implements Menu {
      * The options that's available for the user.
      * @param input
      */
-    @Override
     public void doAction(Scanner input) {
         System.out.print("Select number from menu:");
         String action = input.nextLine();
@@ -102,7 +106,6 @@ public class UserMenu implements Menu {
                     deleteUser();
                     break;
                 default:
-                    defaultAction(actionInt);
                     break;
             }
         } else {
@@ -110,7 +113,6 @@ public class UserMenu implements Menu {
         }
     }
 
-    @Override
     public String getTitle() {
         return "User Menu";
     }
@@ -129,10 +131,6 @@ public class UserMenu implements Menu {
             name = input.nextLine();
             newFriend = getStore().getUserWithName(name);
 
-            if(isSpecialInput(name)){
-                break;
-            }
-
         } while (!newFriend.isPresent());
 
         if (newFriend.isPresent()) {
@@ -142,7 +140,6 @@ public class UserMenu implements Menu {
                 e.printStackTrace();
             }
         } else {
-            checkSpecialInput(name);
         }
     }
 
@@ -184,16 +181,12 @@ public class UserMenu implements Menu {
                 name = input.nextLine();
                 delFriend = getStore().getUserWithName(name);
 
-                if(isSpecialInput(name)){
-                    break;
-                }
 
             } while (!delFriend.isPresent());
 
             if(delFriend.isPresent() && getStore().getSelectedUser().get().getUserRelation(delFriend.get()).isPresent()){
                 getStore().getSelectedUser().get().deleteRelation(delFriend.get());
             } else {
-                checkSpecialInput(name);
             }
         } else {
             System.out.println("\n\nUser has no relation to delete.\n");
@@ -253,5 +246,10 @@ public class UserMenu implements Menu {
         //Change state
         MiniNet.switchState(States.MAIN_MENU);
         getStore().setSelectedUser(null);
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+
     }
 }
