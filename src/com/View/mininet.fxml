@@ -64,13 +64,13 @@
                   </Pane>
                </children>
             </AnchorPane>
-        <AnchorPane fx:id="mainMenuPane" layoutY="90.0" minHeight="0.0" minWidth="0.0" prefHeight="410.0" prefWidth="600.0" style="-fx-background-color: white;">
+        <AnchorPane fx:id="mainMenuPane" layoutY="70.0" minHeight="0.0" minWidth="0.0" prefHeight="430.0" prefWidth="600.0" style="-fx-background-color: rgb(173,175,174);">
             <fx:include fx:id="mainMenuFile" source="main_menu.fxml" />
         </AnchorPane>
-          <AnchorPane fx:id="addUserPane" layoutY="90.0" minHeight="0.0" minWidth="0.0" prefHeight="410.0" prefWidth="600.0" style="-fx-background-color: white;" visible="false">
+          <AnchorPane fx:id="addUserPane" layoutY="70.0" minHeight="0.0" minWidth="0.0" prefHeight="430.0" prefWidth="600.0" style="-fx-background-color: rgb(173,175,174);" visible="false">
               <fx:include fx:id="addUserFile" source="add_user.fxml" />
           </AnchorPane>
-        <AnchorPane fx:id="userProfilePane" layoutY="90.0" minHeight="0.0" minWidth="0.0" prefHeight="410.0" prefWidth="600.0" style="-fx-background-color: white;" visible="false">
+        <AnchorPane fx:id="userProfilePane" layoutY="70.0" minHeight="0.0" minWidth="0.0" prefHeight="430.0" prefWidth="600.0" style="-fx-background-color: rgb(173,175,174);" visible="false">
             <fx:include fx:id="userProfileFile" source="user_profile.fxml" />
         </AnchorPane>
 

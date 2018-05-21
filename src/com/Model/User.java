@@ -1,17 +1,18 @@
 package com.Model;
 
 import com.Model.Exceptions.*;
+import com.Services.UserFactory;
+import com.Services.UserStore;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
- * User is the abstract class which Adult, YoungAdult and Infants.
+ * User is the abstract class which Adult, YoungAdult and Infants extends from.
  * Contains a list of generic methods and local variables that apply to all users.
  *
- * @version 1.0.0 22nd March 2018
+ * @version 2.0.0 20th May 2018
  * @author Tejas Cherukara
  */
 public abstract class User{
@@ -22,10 +23,15 @@ public abstract class User{
     private String gender;
     private String profilePicture;
     private String status;
-    private String residentialState;
+    private String state;
+    public UserStore store;
     public static Predicate<Relationship> isDependant = relationship -> relationship.getRelation() == RelationType.DEPENDANT;
     public static Predicate<Relationship> isGuardian = relationship -> relationship.getRelation() == RelationType.GUARDIAN;
     public static Predicate<Relationship> isFriend = relationship -> relationship.getRelation() == RelationType.FRIEND;
+    public static Predicate<Relationship> isCoParent = relationship -> relationship.getRelation() == RelationType.COPARENT;
+    public static Predicate<Relationship> isClassmates = relationship -> relationship.getRelation() == RelationType.CLASSMATES;
+    public static Predicate<Relationship> isColleague = relationship -> relationship.getRelation() == RelationType.COLLEAGUES;
+
 
     public User(String name, Integer age, String profilePicture, String status, String gender, String state) {
         this.name = name;
@@ -33,7 +39,9 @@ public abstract class User{
         this.profilePicture = profilePicture;
         this.status = status;
         this.gender = gender;
-        this.residentialState = state;
+        this.state = state;
+        store = UserStore.getInstance();
+        store.addUser(this);
     }
 
     /**
@@ -41,64 +49,60 @@ public abstract class User{
      * @param user User to search for.
      * @return the optional relationship that may or may not exist.
      */
-    public Optional<Relationship> getUserRelation(User user){
-        return relationships.stream().filter(o -> o.getUser() == user).findAny();
+    public Optional<Relationship> getUserRelation(User user, RelationType relationType){
+        return relationships.stream().filter(o -> o.getUser() == user && o.getRelation() == relationType).findAny();
     }
 
     /**
      * Abstract add new relation method which will be overriden in sub classes.
      * @param newFriend friend to add to user.
      */
-    public abstract String addRelation(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException;
+    public abstract boolean addRelation(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException, NoAvailableException;
 
     /**
      * Abstract delete relation method which will be overriden in sub classes.
-     * @param friend friend to add to user.
+     * @param deleteRel friend to add to user.
      */
-    public abstract String deleteRelation(User friend);
+    public abstract boolean deleteRelation(Relationship deleteRel) throws NoParentException;
 
     /**
      * Abstract erase relation with user method which will be overriden in sub classes.
      * @param user friend to add to user.
      */
-    public abstract String eraseRelationWithUser(User user) throws NoParentException;
+    public boolean eraseRelationWithUser(User user) {
+        List<Relationship> relationshipsWithUser = relationships.stream().filter(o -> o.getUser().equals(user)).collect(Collectors.toList());
 
-    /**
-     * Displays information about the friends / relations of a user.
-     */
-    public void showFriends() {
-        System.out.print("\n\nTotal number of relationships: "+ relationships.size()+"\n\n");
-
-        relationships.forEach(relation -> {
-            System.out.println("Relation Type: "+relation.getRelation());
-            System.out.println("Name: "+relation.getUser().getName());
-            System.out.println("Age: "+relation.getUser().getAge());
-
-            if (relation.getUser().getProfilePicture() != null) {
-                System.out.println(relation.getUser().getProfilePicture());
-            }
-
-            if (relation.getUser().getStatus() != null) {
-                System.out.println(relation.getUser().getStatus());
-            }
-
-            System.out.println();
+        relationshipsWithUser.forEach(o -> {
+            relationships.remove(o);
+            store.deleteRelation(this, o);
         });
+
+        return true;
     }
 
-    public Optional<User> hasRelation(User user){
-        return relationships.stream()
-                .filter(o -> o.getUser().getName().equalsIgnoreCase(user.getName()))
-                .map(Relationship::getUser)
-                .findAny();
-    }
 
     /**
-     * Getter for friends
+     * Abstract can delete user relation which contains constraints to check if the user can be delete.
+     */
+    public abstract boolean canDeleteUser() throws NoParentException;
+
+    /**
+     * Gets the siblings of young adults and infants.
      * @return
      */
-    public List<Relationship> getFriends() {
-        return relationships;
+    public List<Relationship> getSiblings() {
+        if (UserFactory.isYoungAdult.test(this) || UserFactory.isInfant.test(this)) {
+            return this.getRelationships().stream()
+                    .filter(o -> o.getRelation() == RelationType.GUARDIAN)
+                    .map(o -> o.getUser().getRelationships())
+                    .flatMap(List::stream)
+                    .filter(o -> o.getRelation() == RelationType.DEPENDANT)
+                    .filter(o -> !o.getUser().getName().equalsIgnoreCase(this.getName()))
+                    .map(o -> new Relationship(RelationType.SIBLINGS, o.getUser()))
+                    .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     /**
@@ -125,17 +129,37 @@ public abstract class User{
         return profilePicture;
     }
 
-    public void setResidentialState(String residentialState) {
-        this.residentialState = residentialState;
+    /**
+     * Setter for the users state.
+     * @param residentialState
+     */
+    public void setState(String residentialState) {
+        this.state = residentialState;
     }
 
+    /**
+     * Setter for the users gender
+     * @return
+     */
     public String getGender() {
         return gender;
 
     }
 
-    public String getResidentialState() {
-        return residentialState;
+    /**
+     * Getter for users gender.
+     * @param gender
+     */
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    /**
+     * Getter for users state.
+     * @return
+     */
+    public String getState() {
+        return state;
     }
 
     /**
@@ -163,6 +187,10 @@ public abstract class User{
         this.status = status;
     }
 
+    /**
+     * Getter for users relationships
+     * @return
+     */
     public List<Relationship> getRelationships() {
         return relationships;
     }

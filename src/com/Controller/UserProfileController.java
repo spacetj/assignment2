@@ -4,252 +4,295 @@ import com.MiniNet;
 import com.Model.Exceptions.*;
 import com.Model.RelationType;
 import com.Model.Relationship;
-import com.Model.States;
 import com.Model.User;
 import com.Services.UserFactory;
+import com.Services.UserStore;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
-import javafx.scene.layout.GridPane;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 
+import java.io.File;
 import java.net.URL;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.Scanner;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import static com.MiniNet.getStore;
+import static com.Services.UserStore.ASSETS_FOLDER;
 
 /**
  * UserProfileController has the menu options once a user is selected.
  *
- * @version 1.0.0 22nd March 2018
+ * @version 2.0.0 20th May 2018
  * @author Tejas Cherukara
  */
 public class UserProfileController implements Initializable {
 
-    public UserProfileController() {}
+    @FXML
+    ChoiceBox<String> selectUserDropdown, addRelationUserDropDown, addRelationDropDown,
+            deleteRelationUserDropdown;
 
-    /**
-     * The options available when a user is selected.
-     */
-    public Scene getMenu() {
-        GridPane pane = new GridPane();
-//        pane.getChildren().add(1, );
-        return null;
-//        if (getStore().getSelectedUser().isPresent()) {
-//            User user = getStore().getSelectedUser().get();
-//
-//            System.out.println(MiniNet.DIVIDER);
-//            System.out.println("Selected user: "+user.getName());
-//            System.out.println("Age: "+user.getAge());
-//            if (user.getProfilePicture() != null) {
-//                System.out.println("Profile Picture: "+ user.getProfilePicture());
-//            }
-//            if (user.getStatus() != null) {
-//                System.out.println("Status: "+user.getStatus());
-//            }
-//            System.out.println();
-//            System.out.println("Options");
-//            System.out.println(MiniNet.DIVIDER);
-//            System.out.println("0. Back");
-//            System.out.println("1. Show relations");
-//            System.out.println("2. Add friend");
-//            System.out.println("3. Delete friend");
-//            System.out.println("4. Update profile picture");
-//            System.out.println("5. Update status");
-//            if(UserFactory.isYoungAdult.test(getStore().getSelectedUser().get())){
-//                System.out.println("6. Show parents");
-//            } else {
-//                System.out.println("6. Show dependants");
-//            }
-//            System.out.println("7. Delete account");
-//        } else {
-//            System.out.println("\nSelect a user first\n");
-//            MiniNet.switchState(States.MAIN_MENU);
-//        }
-    }
+    @FXML
+    Text userNameText, userAgeText, userGenderText, userStatusText, userStateText, addRelationStatusText,
+            deleteRelationStatusText;
 
-    /**
-     * The options that's available for the user.
-     * @param input
-     */
-    public void doAction(Scanner input) {
-        System.out.print("Select number from menu:");
-        String action = input.nextLine();
-        if(MiniNet.isInputInt(action) && getStore().getSelectedUser().isPresent()){
-            int actionInt = Integer.parseInt(action);
-            switch(actionInt){
-                case 0:
-                    MiniNet.switchState(States.MAIN_MENU);
-                    break;
-                case 1:
-                    getStore().getSelectedUser().get().showFriends();
-                    break;
-                case 2:
-                    addfriend(input);
-                    break;
-                case 3:
-                    deleteFriend(input);
-                    break;
-                case 4:
-                    updateProfilePicture(input);
-                    break;
-                case 5:
-                    updateStatus(input);
-                    break;
-                case 6:
-                    showSpecialRelations();
-                    break;
-                case 7:
-                    deleteUser();
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            System.out.println("Please input one of the options above.\n\n");
-        }
-    }
+    @FXML
+    TextField selectedUserGenderField, selectedUserProfilePicField, selectedUserstatusField, selectedUserStateField;
 
-    public String getTitle() {
-        return "User Menu";
-    }
+    @FXML
+    ImageView userProfPicImage, addRelationStatusImage, deleteRelationStatusImage;
 
-    /**
-     * Get the name of the user to add as a friend
-     * @param input Scanner to get the name of the user to add.
-     */
-    private void addfriend(Scanner input) {
-        getStore().displayUsers();
-        Optional<User> newFriend;
-        String name;
+    @FXML
+    HBox userInformationBox;
 
-        do {
-            System.out.println("\n\n Name of the user to add: ");
-            name = input.nextLine();
-            newFriend = getStore().getUserWithName(name);
+    @FXML
+    TableView<Relationship> selectedUserTableView;
 
-        } while (!newFriend.isPresent());
+    @FXML
+    TableColumn<User,String> userACol, relationshipCol;
 
-        if (newFriend.isPresent()) {
-            try {
-                getStore().getSelectedUser().get().addRelation(new Relationship(RelationType.FRIEND, newFriend.get()));
-            } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeColleaguesException | NotToBeClassmastesException e) {
-                e.printStackTrace();
-            }
-        } else {
-        }
-    }
+    @FXML
+    Tab showRelationsTab, addRelationTab, deleteRelationTab, updateProfileTab;
 
-    /**
-     * Update the profile picture of a user
-     * @param input Scanner to get the new profile picture.
-     */
-    private void updateProfilePicture(Scanner input){
-        System.out.print("Enter new profile picture: ");
-        String profPic = input.nextLine();
-        getStore().getSelectedUser().get().setProfilePicture(profPic);
-        System.out.println("\nProfile picture updated.");
-    }
+    @FXML
+    VBox addRelationStatusBox, deleteRelationStatusBox;
 
-    /**
-     * Update the status of a user.
-     * @param input Scanner to get the new status
-     */
-    private void updateStatus(Scanner input){
-        System.out.print("Enter new status: ");
-        String status = input.nextLine();
-        getStore().getSelectedUser().get().setStatus(status);
-        System.out.println("\nStatus updated.");
-    }
+    private UserStore store;
+    private ObservableList<Relationship> selectedUserRelationships = FXCollections.observableArrayList();
 
-    /**
-     * Get the name of the user to delete.
-     * @param input Scanner to get the name from System in.
-     */
-    private void deleteFriend(Scanner input){
-        getStore().getSelectedUser().get().showFriends();
-        Optional<User> delFriend;
-        String name;
-
-        // Check that the user has friends before the delete functionality
-        if (!getStore().getSelectedUser().get().getFriends().isEmpty()) {
-            do {
-                System.out.println("\n\n Name of the user to delete: ");
-                name = input.nextLine();
-                delFriend = getStore().getUserWithName(name);
-
-
-            } while (!delFriend.isPresent());
-
-            if(delFriend.isPresent() && getStore().getSelectedUser().get().getUserRelation(delFriend.get()).isPresent()){
-                getStore().getSelectedUser().get().deleteRelation(delFriend.get());
-            } else {
-            }
-        } else {
-            System.out.println("\n\nUser has no relation to delete.\n");
-        }
-    }
-
-    /**
-     * For parents, shows the related dependants, for young adults, it shows the parents.
-     */
-    private void showSpecialRelations(){
-        List<Relationship> relationsToShow;
-        System.out.println("\n");
-        // If parent, show dependants, else show parents.
-        if (getStore().getSelectedUser().isPresent() && UserFactory.isYoungAdult.test(getStore().getSelectedUser().get())) {
-            relationsToShow = getStore().getSelectedUser().get()
-                    .getFriends().stream()
-                    .filter(o -> o.getRelation() == RelationType.GUARDIAN).collect(Collectors.toList());
-        } else {
-            relationsToShow = getStore().getSelectedUser().get()
-                    .getFriends().stream()
-                    .filter(o -> o.getRelation() == RelationType.DEPENDANT).collect(Collectors.toList());
-        }
-
-        if(!relationsToShow.isEmpty()){
-            relationsToShow.forEach(o -> System.out.println("Name: "+o.getUser().getName()));
-        } else {
-            System.out.println("None to display");
-        }
-
-        System.out.println("\n");
-    }
-
-    /**
-     * Delete user from the user store.
-     */
-    private void deleteUser() {
-        // Delete the relations that link to user
-        getStore().getSelectedUser().get().getFriends().forEach(o -> {
-            try {
-                o.getUser().eraseRelationWithUser(getStore().getSelectedUser().get());
-            } catch (NoParentException e) {
-                e.printStackTrace();
-            }
-        });
-
-        // Filter and delete user dependants.
-        List<Relationship> dependants = getStore().getSelectedUser().get().getFriends().stream()
-                .filter(o -> o.getRelation() == RelationType.DEPENDANT)
-                .collect(Collectors.toList());
-
-        IntStream.range(0, dependants.size()).forEach(i -> {
-            getStore().deleteUser(dependants.get(i).getUser());
-        });
-
-        getStore().deleteUser(getStore().getSelectedUser().get());
-
-        //Change state
-        MiniNet.switchState(States.MAIN_MENU);
-        getStore().setSelectedUser(null);
+    public UserProfileController() {
+        store = UserStore.getInstance();
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        fillDropdown();
+    }
 
+    public void fillDropdown() {
+        selectUserDropdown.getItems().remove(0, selectUserDropdown.getItems().size());
+        selectUserDropdown.getItems().addAll(
+                store.getUsers().stream().map(User::getName).collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * Helps select the user profile that you would like to view.
+     * It populates user information such as name, age, gender, profile picture, state and status
+     */
+    public void setSelectedUser() {
+        store.setSelectedUser(selectUserDropdown.getValue());
+        if(store.getSelectedUser().isPresent()){
+            User user = store.getSelectedUser().get();
+            userNameText.setText(user.getName());
+            userAgeText.setText(user.getAge().toString());
+            userGenderText.setText(user.getGender());
+            userStatusText.setText(user.getStatus());
+            userStateText.setText(user.getState());
+            enableTabs(user);
+
+            File f = new File(ASSETS_FOLDER+user.getProfilePicture());
+            Image i;
+
+            if(f.exists() && !f.isDirectory()){
+                i = new Image(f.toURI().toString());
+            } else {
+                i = MiniNet.getImageFromPath("image_not_found.png");
+            }
+
+            userProfPicImage.setImage(i);
+            userInformationBox.setVisible(true);
+        }
+    }
+
+    /**
+     * This function gets executed when Add Relation button is clicked in user_profile.fxml.
+     *
+     * It attempts to add the user and displays a status image and text.
+     */
+    public void addRelation() {
+        RelationType rel = RelationType.getRelation(addRelationDropDown.getValue());
+        Optional<User> usr = store.getUsers().stream().filter(o -> o.getName().equalsIgnoreCase(addRelationUserDropDown.getValue())).findAny();
+        boolean addRelationStatus = false;
+        String statusText = "";
+        String statusImage;
+
+        if (store.getSelectedUser().isPresent() && rel != null && usr.isPresent()) {
+            Relationship relationship = new Relationship(rel, usr.get());
+            try {
+                addRelationStatus = store.getSelectedUser().get().addRelation(relationship);
+            } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeClassmastesException | NoAvailableException | NotToBeColleaguesException e) {
+                addRelationStatus = false;
+                statusText = e.getMessage();
+                System.out.println("Error: Could not add relation: " + e.getMessage());
+            }
+
+            if (addRelationStatus) {
+                statusText = store.getSelectedUser().get().getName() + " has added " + usr.get().getName() + " as a " + RelationType.getString(rel);
+                statusImage = "success.png";
+            } else {
+                statusText = "Could not add "+usr.get().getName()+" as a "+RelationType.getString(rel)+": "+statusText;
+                statusImage = "failed.png";
+            }
+
+        } else {
+            statusText = "Invalid Request. Missing Information.";
+            statusImage = "failed.png";
+        }
+
+        addRelationStatusText.setText(statusText);
+        addRelationStatusImage.setImage(MiniNet.getImageFromPath(statusImage));
+        addRelationStatusBox.setVisible(true);
+    }
+
+    /**
+     * This function is invoked when the delete relation button is clicked on the user_profile.fxml
+     *
+     * Depending on the status of the deletion, it will display the te3xt and status image.
+     */
+    public void deleteRelation() {
+        Optional<Relationship> relationship = Optional.empty();
+        String statusText = "";
+        String statusImage;
+        String[] userAndRelation = deleteRelationUserDropdown.getValue().split(" - ");
+
+        // Locate the relationship
+        if (store.getSelectedUser().isPresent() && userAndRelation.length == 2) {
+            relationship = store.getSelectedUser().get().getRelationships().stream().filter(o ->
+                    o.getUser().getName().equalsIgnoreCase(userAndRelation[0])).filter(o -> RelationType.valueOf(userAndRelation[1]) == o.getRelation()).findAny();
+        }
+        boolean deleteRelationStatus = false;
+
+        if (relationship.isPresent() && store.getSelectedUser().isPresent()) {
+            try {
+                deleteRelationStatus = store.getSelectedUser().get().deleteRelation(relationship.get());
+            } catch (NoParentException e) {
+                deleteRelationStatus = false;
+                statusText = e.getMessage();
+                System.out.println("Error: Could not delete relation: " + e.getMessage());
+            }
+
+            if (deleteRelationStatus) {
+                statusText = store.getSelectedUser().get().getName() + " has deleted " + relationship.get().getUser().getName();
+                statusImage = "success.png";
+            } else {
+                statusText = "Could not delete relation: "+statusText;
+                statusImage = "failed.png";
+            }
+        } else {
+            statusText = "Could not process request.";
+            statusImage = "failed.png";
+        }
+
+        deleteRelationStatusText.setText(statusText);
+        deleteRelationStatusImage.setImage(MiniNet.getImageFromPath(statusImage));
+        deleteRelationStatusBox.setVisible(true);
+
+    }
+
+    /**
+     * When a user has been selected, this function is called to execute the related user functionality.
+     *
+     * It enables tabs such as add relation, delete relation and other actions that are associated with the user.
+     * @param user
+     */
+    private void enableTabs(User user) {
+        showRelationsTab.setDisable(false);
+        addRelationTab.setDisable(false);
+        deleteRelationTab.setDisable(false);
+        updateProfileTab.setDisable(false);
+        deleteRelationStatusBox.setVisible(false);
+        addRelationStatusBox.setVisible(false);
+
+        populateDropdowns(user);
+
+        setUserRelationships(user);
+
+        setProfileInformation(user);
+    }
+
+    /**
+     * Populates dropdowns such as addRelationDropDown and deleteRelationDropDown.
+     * @param user
+     */
+    private void populateDropdowns(User user) {
+        addRelationDropDown.getItems().remove(0, addRelationDropDown.getItems().size());
+        addRelationUserDropDown.getItems().remove(0, addRelationUserDropDown.getItems().size());
+        deleteRelationUserDropdown.getItems().remove(0, deleteRelationUserDropdown.getItems().size());
+        addRelationUserDropDown.getItems().addAll(
+                store.getUsers().stream()
+                        .filter(o -> !o.getName().equalsIgnoreCase(user.getName()))
+                        .map(User::getName).collect(Collectors.toList())
+        );
+        deleteRelationUserDropdown.getItems().addAll(
+                user.getRelationships().stream()
+                        .map(o -> o.getUser().getName()+" - "+o.getRelation()).collect(Collectors.toList())
+        );
+
+        addRelationDropDown.getItems().addAll(
+                Arrays.asList(RelationType.relations)
+        );
+    }
+
+    public void resetUserRelationshipTable(){
+        if(store.getSelectedUser().isPresent()){
+            setUserRelationships(store.getSelectedUser().get());
+            populateDropdowns(store.getSelectedUser().get());
+        }
+    }
+
+    /**
+     * Displays the relationships that the user has including sibling relations.
+     * @param user
+     */
+    private void setUserRelationships(User user) {
+        selectedUserRelationships.remove(0, selectedUserRelationships.size());
+        selectedUserRelationships.addAll(user.getRelationships());
+
+        // Add siblings if YoungAdult or Infant
+        if(UserFactory.isYoungAdult.test(user) || UserFactory.isInfant.test(user)){
+            user.getSiblings().forEach(o -> {
+                if(selectedUserRelationships.stream().map(usr -> usr.getUser().getName()).noneMatch(usr -> usr.equalsIgnoreCase(o.getUser().getName()))){
+                    selectedUserRelationships.add(o);
+                }
+            });
+        }
+
+        userACol.setCellValueFactory(new PropertyValueFactory<>("username"));
+        relationshipCol.setCellValueFactory(new PropertyValueFactory<>("relation"));
+        selectedUserTableView.setItems(selectedUserRelationships);
+    }
+
+    /**
+     * Sets profile information that is updatable.
+     * @param selectedUser
+     */
+    private void setProfileInformation(User selectedUser) {
+        selectedUserGenderField.setText(selectedUser.getGender());
+        selectedUserProfilePicField.setText(selectedUser.getProfilePicture());
+        selectedUserStateField.setText(selectedUser.getState());
+        selectedUserstatusField.setText(selectedUser.getStatus());
+    }
+
+    /**
+     * Update changable user information such as gender, profile picture, status and state.
+     */
+    public void updateUser() {
+        if(store.getSelectedUser().isPresent()){
+            store.getSelectedUser().get().setGender(selectedUserGenderField.getText());
+            store.getSelectedUser().get().setProfilePicture(selectedUserProfilePicField.getText());
+            store.getSelectedUser().get().setStatus(selectedUserstatusField.getText());
+            store.getSelectedUser().get().setState(selectedUserStateField.getText());
+        }
+
+        store.updateUser(store.getSelectedUser().get());
     }
 }

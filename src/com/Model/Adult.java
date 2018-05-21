@@ -5,73 +5,105 @@ import com.Services.UserFactory;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
- * Adult is instantiated when a user is over 15 years old.
+ * Adult is instantiated when a user is over 16 years old.
  *
  * @author Tejas Cherukara
- * @version 1.0.0 22nd March 2018
+ * @version 2.0.0 20th May 2018
  */
 public class Adult extends User {
-
-    private Predicate<Relationship> isCoParent = relationship -> relationship.getRelation() == RelationType.COPARENT;
 
     public Adult(String name, Integer age, String profilePicture, String status, String gender, String state) {
         super(name, age, profilePicture, status, gender, state);
     }
 
+    /**
+     * Checks the contraints for new relations.
+     * @param newFriend friend to add to user.
+     * @return
+     * @throws NotToBeColleaguesException
+     * @throws NotToBeFriendsException
+     * @throws NotToBeCoupledException
+     * @throws NoAvailableException
+     * @throws NotToBeClassmastesException
+     * @throws TooYoungException
+     */
     @Override
-    public String addRelation(Relationship newFriend) {
+    public boolean addRelation(Relationship newFriend) throws NotToBeColleaguesException, NotToBeFriendsException,
+            NotToBeCoupledException, NoAvailableException, NotToBeClassmastesException, TooYoungException {
         if (!relationships.contains(newFriend) && !newFriend.getUser().getName().equalsIgnoreCase(this.getName())) {
             if (UserFactory.isYoungAdult.test(newFriend.getUser()) || UserFactory.isInfant.test(newFriend.getUser())) {
-                try {
-                    return addDependant(newFriend);
-                } catch (NotToBeFriendsException | NotToBeColleaguesException e) {
-                    return e.getMessage();
-                }
+                return addDependant(newFriend);
             } else if (isCoParent.test(newFriend)) {
-                try {
-                    return addCoParent(newFriend);
-                } catch (NoAvailableException | NotToBeCoupledException e) {
-                    return e.getMessage();
-                }
-            } else if (isFriend.test(newFriend)) {
-                return addFriend(newFriend);
+                return addCoParent(newFriend);
+            } else if (isFriend.test(newFriend) && UserFactory.isAdult.test(newFriend.getUser())) {
+                return addRel(newFriend);
+            } else if (isColleague.test(newFriend) && UserFactory.isAdult.test(newFriend.getUser())){
+                return addRel(newFriend);
+            } else if (isClassmates.test(newFriend)){
+                return addRel(newFriend);
             }
+            return false;
         }
-        return "";
+        return true;
     }
 
-    private String addDependant(Relationship newFriend) throws NotToBeFriendsException, NotToBeColleaguesException {
+    /**
+     * Add the given relationship without contraints.
+     * @param newFriend
+     * @return
+     * @throws TooYoungException
+     * @throws NotToBeFriendsException
+     * @throws NotToBeColleaguesException
+     * @throws NotToBeCoupledException
+     * @throws NotToBeClassmastesException
+     * @throws NoAvailableException
+     */
+    private boolean addRel(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException, NoAvailableException {
+        relationships.add(newFriend);
+        try {
+            newFriend.getUser().addRelation(new Relationship(newFriend.getRelation(), this));
+            return store.addRelation(this, newFriend);
+        } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeColleaguesException | NoAvailableException | NotToBeClassmastesException e) {
+            relationships.remove(newFriend);
+            throw e;
+        }
+    }
+
+    /**
+     * Checks and adds a DEPENDANT relation if it meets the constraints.
+     * @param newFriend
+     * @return
+     * @throws NotToBeFriendsException
+     * @throws NotToBeColleaguesException
+     */
+    private boolean addDependant(Relationship newFriend) throws NotToBeFriendsException, NotToBeColleaguesException, NotToBeClassmastesException, NotToBeCoupledException, NoAvailableException, TooYoungException {
         if(isDependant.test(newFriend)){
             relationships.add(newFriend);
-            return "Added "+newFriend.getUser().getName()+" as a dependant to "+this.getName();
+            return true;
+        } else if(isClassmates.test(newFriend)){
+            return addRel(newFriend);
         } else if(newFriend.getRelation() == RelationType.FRIEND){
             throw new NotToBeFriendsException("Adults cannot be friends with Young Children");
         } else if(newFriend.getRelation() == RelationType.COLLEAGUES){
             throw new NotToBeColleaguesException("Adults cannot be colleagues with children");
         }
-        return "Cannot add friend";
+        return false;
     }
 
-    private String addFriend(Relationship newFriend) {
-        if (this.getUserRelation(newFriend.getUser()).isPresent()) {
-            return newFriend.getUser().getName()+" is already associated to "+ this.getName() +"as " +
-                    this.getUserRelation(newFriend.getUser()).get().getRelation();
-        } else {
-            relationships.add(newFriend);
-            try {
-                newFriend.getUser().addRelation(new Relationship(RelationType.FRIEND, this));
-            } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeColleaguesException | NotToBeClassmastesException e) {
-                relationships.remove(newFriend);
-                return e.getMessage();
-            }
-            return "\n\n"+newFriend.getUser().getName()+" added as a new friend to "+this.getName()+"\n\n";
-        }
-    }
-
-    private String addCoParent(Relationship newFriend) throws NoAvailableException, NotToBeCoupledException {
+    /**
+     * Checks and adds a COUPLE relation if it meets the contraints.
+     * @param newFriend
+     * @return
+     * @throws NoAvailableException
+     * @throws NotToBeCoupledException
+     * @throws NotToBeFriendsException
+     * @throws NotToBeClassmastesException
+     * @throws NotToBeColleaguesException
+     * @throws TooYoungException
+     */
+    private boolean addCoParent(Relationship newFriend) throws NoAvailableException, NotToBeCoupledException, NotToBeFriendsException, NotToBeClassmastesException, NotToBeColleaguesException, TooYoungException {
 
         if(this.relationships.stream().anyMatch(o -> o.getRelation() == RelationType.COPARENT)){
             throw new NoAvailableException("Already has a coparent");
@@ -81,61 +113,64 @@ public class Adult extends User {
             throw new NotToBeCoupledException("Cannot add child / young child as couple");
         }
 
-        Optional<Relationship> currentRelo = this.getUserRelation(newFriend.getUser());
-        //Check if existing friendship exists with user and change relation type ro coparent.
-        if (currentRelo.isPresent()) {
-            RelationType previousRel = this.getUserRelation(newFriend.getUser()).get().getRelation();
-            this.getUserRelation(newFriend.getUser()).get().setRelation(RelationType.COPARENT);
-            try {
-                newFriend.getUser().addRelation(new Relationship(RelationType.COPARENT, this));
-            } catch (TooYoungException | NotToBeFriendsException | NotToBeColleaguesException | NotToBeClassmastesException | NotToBeCoupledException e) {
-                this.getUserRelation(newFriend.getUser()).get().setRelation(previousRel);
-                System.out.println(e.getMessage());
-            }
-        } else if (!currentRelo.isPresent()) {
-            // Else create a new co parent relation for both users
+        Optional<Relationship> rel = newFriend.getUser().getRelationships().stream().filter(o -> isCoParent.test(o)).findAny();
+
+        if (!rel.isPresent() || (rel.isPresent() && rel.get().getUser().getName().equalsIgnoreCase(this.getName()))) {
             relationships.add(newFriend);
             try {
                 newFriend.getUser().addRelation(new Relationship(RelationType.COPARENT, this));
+                return store.addRelation(this, newFriend);
             } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeColleaguesException | NotToBeClassmastesException e) {
                 relationships.remove(newFriend);
-                System.out.println(e.getMessage());
+                throw e;
             }
         }
-        return "No coparent";
+        return false;
+
     }
 
     /**
      * Overrides the delete relation because dependant and coparent relationships cannot be deleted from an adult.
      *
-     * @param friend to be delete.
+     * @param rel to be delete.
      */
     @Override
-    public String deleteRelation(User friend) {
-        Optional<Relationship> userRelation = this.getUserRelation(friend);
+    public boolean deleteRelation(Relationship rel) throws NoParentException {
+        Optional<Relationship> userRelation = this.getUserRelation(rel.getUser(), rel.getRelation());
         //Check if dependant or coparent before deleting relation.
-        if (userRelation.isPresent() && !isDependant.test(userRelation.get()) && !isCoParent.test(userRelation.get())) {
-            relationships.remove(this.getUserRelation(friend).get());
-            friend.deleteRelation(this);
-            System.out.println(this.getName()+" delete "+friend.getName()+" as a friend.");
-        } else {
-            System.out.println("User must exist / Dependant and coparent relations cannot be deleted");
+        if (userRelation.isPresent()) {
+            if (!isDependant.test(userRelation.get()) && !isCoParent.test(userRelation.get())) {
+                relationships.remove(userRelation.get());
+                try {
+                    rel.getUser().deleteRelation(new Relationship(rel.getRelation(), this));
+                    return store.deleteRelation(this, userRelation.get());
+                } catch (NoParentException e) {
+                    System.out.println("Error: "+this.getName()+" could not delete relation "+
+                            userRelation.get().getRelation()+" with "+userRelation.get().getUser().getName());
+                    relationships.add(userRelation.get());
+                    throw e;
+                }
+            } else {
+                return false;
+            }
         }
-        return "cannot delete";
+        return true;
+    }
+
+    @Override
+    public boolean canDeleteUser() throws NoParentException {
+        boolean hasDependant = relationships.stream().anyMatch(o -> isDependant.test(o));
+        boolean hasCoParent = relationships.stream().anyMatch(o -> isCoParent.test(o));
+
+        if(hasDependant) throw new NoParentException("Cannot delete adult, has a dependent.");
+        return !hasCoParent;
     }
 
     /**
-     * When another user is being deleted from the social network, this method is called to ensure that
-     * all exisiting connections between this user and the to be deleted user are erased.
-     * @param user that is to be deleted.
+     * Checks if this user is couple with the input user.
+     * @param user that could be this users couple.
+     * @return boolean if this user is couple with the input user.
      */
-    @Override
-    public String eraseRelationWithUser(User user) {
-        Optional<Relationship> userRelo = relationships.stream().filter(o -> o.getUser().equals(user)).findFirst();
-        userRelo.ifPresent(relationship -> relationships.remove(relationship));
-        return this.getName()+" removed"+ user.getName()+"'s relation.";
-    }
-
     public boolean isCoupleWith(String user){
         return this.relationships.stream()
                 .anyMatch(

@@ -1,6 +1,6 @@
 package com.Controller;
 
-import javafx.event.ActionEvent;
+import com.MiniNet;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.image.Image;
@@ -12,48 +12,39 @@ import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * HomeController is the top template which has the MiniNet title and the icons.
+ *
+ * @version 2.0.0 20th May 2018
+ * @author Tejas Cherukara
+ */
 public class HomeController implements Initializable {
 
-    // Active Line
     @FXML
-    Rectangle homePageActive;
-
-    @FXML
-    Rectangle userProfileActive;
+    Rectangle homePageActive, userProfileActive, addUserActive;
 
     @FXML
-    Rectangle addUserActive;
-
-    // Active Pane
-    @FXML
-    AnchorPane mainMenuPane;
+    AnchorPane mainMenuPane, addUserPane, userProfilePane;
 
     @FXML
-    AnchorPane addUserPane;
+    ImageView mainMenuIcon, addUserIcon, userProfileIcon;
 
-    @FXML
-    AnchorPane userProfilePane;
-
-
-
-
-    //Icons
-    @FXML
-    ImageView mainMenuIcon;
-
-    @FXML
-    ImageView addUserIcon;
-
-    @FXML
-    ImageView userProfileIcon;
-
+    /**
+     * Initializes the icon images.
+     * @param location
+     * @param resources
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        mainMenuIcon.setImage(new Image(new File("assets/home_page.png").toURI().toString()));
-        addUserIcon.setImage(new Image(new File("assets/add_user.png").toURI().toString()));
-        userProfileIcon.setImage(new Image(new File("assets/user_profile.png").toURI().toString()));
+        mainMenuIcon.setImage(MiniNet.getImageFromPath("home_page.png"));
+        addUserIcon.setImage(MiniNet.getImageFromPath("add_user.png"));
+        userProfileIcon.setImage(MiniNet.getImageFromPath("user_profile.png"));
     }
 
+    /**
+     * The method is invoked when the main menu icon is clicked.
+     * It hides the other panes.
+     */
     public void mainMenuClicked(){
         addUserActive.setVisible(false);
         addUserPane.setVisible(false);
@@ -63,6 +54,10 @@ public class HomeController implements Initializable {
         mainMenuPane.setVisible(true);
     }
 
+    /**
+     * The method is invoked when the add user icon is clicked.
+     * It hides the other panes.
+     */
     public void addUserClicked(){
         mainMenuPane.setVisible(false);
         addUserPane.setVisible(true);
@@ -72,6 +67,10 @@ public class HomeController implements Initializable {
         userProfileActive.setVisible(false);
     }
 
+    /**
+     * The method is invoked when the user profile is clicked.
+     * It hides the other panes.
+     */
     public void userProfileClicked(){
         mainMenuPane.setVisible(false);
         addUserPane.setVisible(false);

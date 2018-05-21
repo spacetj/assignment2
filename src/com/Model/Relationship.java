@@ -3,7 +3,7 @@ package com.Model;
 /**
  * Relationship is the class used to add a friend to a user.
  *
- * @version 1.0.0 22nd March 2018
+ * @version 2.0.0 20th May 2018
  * @author Tejas Cherukara
  */
 public class Relationship {
@@ -40,11 +40,25 @@ public class Relationship {
         return user;
     }
 
+    /**
+     * Gets the username of the user associated with the relation.
+     * @return
+     */
+    public String getUsername() {
+        return user.getName();
+    }
+
+    /**
+     * Overrides the default equals.
+     * 2 Relationships are equals if their usernames and relation types are the same.
+     * @param obj
+     * @return
+     */
     @Override
     public boolean equals(Object obj) {
         Relationship rel = (Relationship) obj;
         return obj instanceof Relationship
-                && rel.getUser() == this.getUser()
+                && rel.getUser().getName().equalsIgnoreCase(this.getUser().getName())
                 && rel.getRelation() == this.getRelation();
     }
 }

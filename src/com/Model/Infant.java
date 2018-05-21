@@ -5,9 +5,9 @@ import com.Model.Exceptions.*;
 import java.util.Optional;
 
 /**
- * Infact class is instantiated when the user is below 2 years old.
+ * Infant class is instantiated when the user is below 2 years old.
  *
- * @version 1.0.0 22nd March 2018
+ * @version 2.0.0 20th May 2018
  * @author Tejas Cherukara
  */
 public class Infant extends YoungAdult {
@@ -17,24 +17,33 @@ public class Infant extends YoungAdult {
     }
 
     /**
-     * Overrides add relation function from user as only guardian can be friends with infants.
+     * Checks the contraints for new relations.
      * @param newFriend
      */
     @Override
-    public String addRelation(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException {
+    public boolean addRelation(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException, NoAvailableException {
         if (!relationships.contains(newFriend) && !newFriend.getUser().getName().equalsIgnoreCase(this.getName())) {
-            if(isGuardian.test(newFriend)){
+            if(isGuardian.test(newFriend) && this.relationships.stream().filter(o -> isGuardian.test(o)).count() < 2){
                 relationships.add(newFriend);
-                newFriend.getUser().addRelation(new Relationship(RelationType.DEPENDANT, this));
-            } else if(newFriend.getRelation() == RelationType.CLASSMATES){
+                try {
+                    newFriend.getUser().addRelation(new Relationship(RelationType.DEPENDANT, this));
+                    return store.addRelation(this, newFriend);
+                } catch (NoAvailableException e) {
+                    relationships.remove(newFriend);
+                    throw e;
+                }
+            } else if(isClassmates.test(newFriend)){
                 throw new NotToBeClassmastesException("Young Children cannot have classmates");
-            } else if(newFriend.getRelation() == RelationType.COPARENT){
+            } else if(isCoParent.test(newFriend)){
                 throw new NotToBeCoupledException("Young Children cannot be a couple");
-            } else {
+            } else if(isColleague.test(newFriend)){
+                throw new NotToBeColleaguesException("Young Children cannot be colleagues.");
+            } else if(isFriend.test(newFriend)){
                 throw new TooYoungException("Young Children cannot make friends");
             }
+            return false;
         }
-        return "Infant cant add rel";
+        return true;
     }
 
     /**
@@ -43,8 +52,8 @@ public class Infant extends YoungAdult {
      * @param friend User to be deleted.
      */
     @Override
-    public String deleteRelation(User friend) {
-        return "\n\nCannot delete guardian relation\n\n";
+    public boolean deleteRelation(Relationship friend) throws NoParentException {
+        throw new NoParentException(friend.getUsername()+" is a guardian of "+this.getName()+". Cannot delete.");
     }
 
     /**
@@ -53,13 +62,15 @@ public class Infant extends YoungAdult {
      * @param user that is to be deleted.
      */
     @Override
-    public String eraseRelationWithUser(User user) throws NoParentException {
+    public boolean eraseRelationWithUser(User user) {
         Optional<Relationship> userRelo = relationships.stream().filter(o -> o.getUser().equals(user)).findFirst();
         if(userRelo.isPresent() && isGuardian.test(userRelo.get())){
-            throw new NoParentException("Adult has a dependant, cannot delete");
+            try {
+                throw new NoParentException(this.getName()+" is a dependant of "+user.getName()+", so user cannot be deleted.");
+            } catch (NoParentException e) {
+                return false;
+            }
         }
-        return "No way hosey";
+        return false;
     }
-
-
 }

@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 /**
  * YoungAdult extends from User and specifies condition apply to users under 16 years old.
  *
+ * @version 2.0.0 20th May 2018
  * @author Tejas Cherukara
- * @version 1.0.0 22nd March 2018
  */
 public class YoungAdult extends User {
 
@@ -26,15 +26,31 @@ public class YoungAdult extends User {
      * @param parent2 guardian number 2
      */
     private void addDependantsTo(User parent1, User parent2) {
+        Relationship coParentRelation = parent1.getUserRelation(parent2, RelationType.COPARENT)
+                .orElse(new Relationship(RelationType.COPARENT, parent2));
+        Relationship parentA = new Relationship(RelationType.GUARDIAN, parent1);
+        Relationship parentB = new Relationship(RelationType.GUARDIAN, parent2);
+        boolean hasCoParentRelation = parent1.getUserRelation(parent2, RelationType.COPARENT).isPresent();
+
         try {
-            this.addRelation(new Relationship(RelationType.GUARDIAN, parent1));
-            this.addRelation(new Relationship(RelationType.GUARDIAN, parent2));
+            this.addRelation(parentA);
+            this.addRelation(parentB);
+            if (!hasCoParentRelation) {
+                parent1.addRelation(new Relationship(RelationType.COPARENT, parent2));
+            }
         } catch (TooYoungException | NotToBeFriendsException | NotToBeColleaguesException |
-                NotToBeCoupledException | NotToBeClassmastesException e) {
-            this.deleteRelation(parent1);
-            this.deleteRelation(parent2);
-            parent1.deleteRelation(parent2);
-            e.getMessage();
+                NotToBeCoupledException | NotToBeClassmastesException | NoAvailableException e) {
+            try {
+                this.deleteRelation(parentA);
+                this.deleteRelation(parentB);
+                if (!hasCoParentRelation) {
+                    parent1.deleteRelation(coParentRelation);
+                }
+                store.deleteUser(this);
+                System.out.println("Error: Couldn't add the guardians of "+this.getName());
+            } catch (NoParentException e1) {
+                System.out.println("Could not delete "+ e1.getMessage());
+            }
         }
     }
 
@@ -44,43 +60,76 @@ public class YoungAdult extends User {
      * @param newFriend
      */
     @Override
-    public String addRelation(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException {
+    public boolean addRelation(Relationship newFriend) throws TooYoungException, NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException, NoAvailableException {
 
         if (!relationships.contains(newFriend) && !newFriend.getUser().getName().equalsIgnoreCase(this.getName())) {
-            if (isGuardian.test(newFriend)) {
-                relationships.add(newFriend);
-                newFriend.getUser().addRelation(new Relationship(RelationType.DEPENDANT, this));
-            } else if (isAgeGapLessThan3(newFriend) && isYoungAdultFromDiffFamily(newFriend) && isFriend.test(newFriend)) {
-                relationships.add(newFriend);
-                System.out.println("\n\n"+newFriend.getUser().getName()+" added as a new friend to "+this.getName()+"\n\n");
-                newFriend.getUser().addRelation(new Relationship(RelationType.FRIEND, this));
+            if (isGuardian.test(newFriend) && this.relationships.stream().filter(o -> isGuardian.test(o)).count() < 2) {
+                return addRel(newFriend, RelationType.DEPENDANT);
+            } else if (isFriend.test(newFriend) && isAgeGapLessThan3(newFriend) && isYoungAdultFromDiffFamily(newFriend)) {
+                return addRel(newFriend, newFriend.getRelation());
+            } else if (isClassmates.test(newFriend)) {
+                return addRel(newFriend, newFriend.getRelation());
             } else if (newFriend.getRelation() == RelationType.COLLEAGUES){
                 throw new NotToBeColleaguesException("Children cannot be colleagues");
             } else if(newFriend.getRelation() == RelationType.COPARENT) {
                 throw new NotToBeCoupledException("Children cannot be a couple");
             } else {
-                throw new NotToBeFriendsException("Cannot add relation to friend");
+                throw new NotToBeFriendsException("Cannot add relation to "+this.getName());
             }
         }
-        return "Cannot Delete Friend";
+        return true;
+    }
+
+    /**
+     * Adds the specified relations without any contraints.
+     * @param newFriend relation that this user needs to add.
+     * @param relation relation that the other user needs to add.
+     * @return
+     * @throws TooYoungException
+     * @throws NotToBeFriendsException
+     * @throws NotToBeColleaguesException
+     * @throws NotToBeCoupledException
+     * @throws NotToBeClassmastesException
+     * @throws NoAvailableException
+     */
+    private boolean addRel(Relationship newFriend, RelationType relation) throws TooYoungException,
+            NotToBeFriendsException, NotToBeColleaguesException, NotToBeCoupledException, NotToBeClassmastesException,
+            NoAvailableException {
+        relationships.add(newFriend);
+        try {
+            newFriend.getUser().addRelation(new Relationship(relation, this));
+            return store.addRelation(this, newFriend);
+        } catch (TooYoungException | NotToBeFriendsException | NotToBeColleaguesException | NotToBeClassmastesException
+                | NotToBeCoupledException | NoAvailableException e) {
+            relationships.remove(newFriend);
+            throw e;
+        }
     }
 
     /**
      * Overrides the delete relation from User class because Guardian relationships cannot be deleted.
-     * @param friend User to be deleted.
+     * @param deleteRel User to be deleted.
      */
     @Override
-    public String deleteRelation(User friend) {
-        if (this.getUserRelation(friend).isPresent()) {
-            if(isGuardian.test(this.getUserRelation(friend).get())){
-                return "\n\nCannot delete a guardian.\n\n";
-            } else {
-                relationships.remove(this.getUserRelation(friend).get());
-                friend.deleteRelation(this);
-                return this.getName()+" delete "+friend.getName()+" as a friend.";
+    public boolean deleteRelation(Relationship deleteRel) throws NoParentException {
+        Optional<Relationship> relationToDelete = this.getUserRelation(deleteRel.getUser(), deleteRel.getRelation());
+        if(relationToDelete.isPresent()){
+            if(isGuardian.test(deleteRel)){
+                throw new NoParentException(deleteRel.getUsername()+" is a guardian of "+this.getName()+". Cannot delete.");
+            } else if(isClassmates.test(deleteRel) || isFriend.test(deleteRel)){
+                relationships.remove(relationToDelete.get());
+                try {
+                    deleteRel.getUser().deleteRelation(new Relationship(deleteRel.getRelation(), this));
+                    store.deleteRelation(this, relationToDelete.get());
+                } catch (NoParentException e) {
+                    System.out.println("Error: "+this.getName()+" could not delete relation "+
+                            relationToDelete.get().getRelation()+" with "+deleteRel.getUser().getName());
+                    relationships.add(relationToDelete.get());
+                    throw e;
+                }
             }
         }
-        return "Cannot delete relation";
+        return true;
     }
 
     /**
@@ -104,9 +153,8 @@ public class YoungAdult extends User {
      */
     private Boolean isYoungAdultFromDiffFamily(Relationship relation) throws NotToBeFriendsException {
 
-
         if (!UserFactory.isYoungAdult.test(relation.getUser())) {
-            throw new NotToBeFriendsException("Adult cannot be friend with child");
+            throw new NotToBeFriendsException("Only young Adults can be friends with young adults");
         }
 
         List<User> parents = relationships.stream()
@@ -114,11 +162,10 @@ public class YoungAdult extends User {
                 .map(Relationship::getUser).collect(Collectors.toList());
 
         // Check that the new friend doesn't have a relation to current users parents.
-        if(parents.stream().noneMatch(o -> o.getUserRelation(relation.getUser()).isPresent())){
+        if(parents.stream().noneMatch(o -> o.getUserRelation(relation.getUser(), RelationType.DEPENDANT).isPresent())){
             return true;
         } else {
-            System.out.println("Young adult is from the same family.");
-            return false;
+            throw new NotToBeFriendsException("Users are from the same family");
         }
     }
 
@@ -128,16 +175,23 @@ public class YoungAdult extends User {
      * @param user that is to be deleted.
      */
     @Override
-    public String eraseRelationWithUser(User user) throws NoParentException {
-        Optional<Relationship> userRelo = relationships.stream().filter(o -> o.getUser().equals(user)).findFirst();
-        if (userRelo.isPresent()) {
-            // If the to be deleted user is this users guardian, have to delete this user as well.
-            if (isGuardian.test(userRelo.get())) {
+    public boolean eraseRelationWithUser(User user){
+        List<Relationship> userRelo = relationships.stream().filter(o -> o.getUser().equals(user)).collect(Collectors.toList());
+        // If the to be deleted user is this users guardian, have to delete this user as well.
+
+        if (userRelo.stream().anyMatch(o -> o.getRelation() == RelationType.GUARDIAN)) {
+            try {
                 throw new NoParentException("Adult has a dependant, cannot delete");
-            } else if(isFriend.test(userRelo.get())){
-                relationships.remove(userRelo.get());
+            } catch (NoParentException e) {
+                return false;
             }
         }
-        return "Not deleted";
+
+        return super.eraseRelationWithUser(user);
+    }
+
+    @Override
+    public boolean canDeleteUser() {
+        return true;
     }
 }

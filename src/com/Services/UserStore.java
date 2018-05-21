@@ -1,5 +1,6 @@
 package com.Services;
 
+import com.Model.Relationship;
 import com.Model.User;
 
 import java.io.File;
@@ -17,12 +18,20 @@ public interface UserStore {
 
     String ASSETS_FOLDER = "assets"+File.separator;
 
+    static UserStore getInstance(){
+        return DBStore.getInstance();
+    }
+
+    boolean isActiveConnection();
     List<User> getUsers();
-    void addUser(User u);
-    void deleteUser(User u);
+    boolean addUser(User u);
+    boolean deleteUser(User u);
+    boolean updateUser(User u);
     Optional<User> getSelectedUser();
-    void setSelectedUser(User selectedUser);
-    void displayUsers();
+    void setSelectedUser(String selectedUserName);
     Optional<User> getUserWithName(String name);
     boolean uniqueName(String name);
+    boolean addRelation(User u , Relationship rel);
+    boolean deleteRelation(User user, Relationship toDelete);
+
 }

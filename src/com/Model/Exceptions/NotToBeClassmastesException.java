@@ -1,7 +1,10 @@
 package com.Model.Exceptions;
 
 /**
- * Created by TJ on 26/4/18.
+ * NotToBeClassmatesException is thrown when trying to make an Infant a classmate.
+ *
+ * @version 2.0.0 20th May 2018
+ * @author Tejas Cherukara
  */
 public class NotToBeClassmastesException extends Exception {
     public NotToBeClassmastesException(String message) {

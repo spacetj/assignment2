@@ -1,7 +1,10 @@
 package com.Model.Exceptions;
 
 /**
- * Created by TJ on 26/4/18.
+ * NotToBeCoupledException gets thrown when trying to make a couple when a user is not an adult.
+ *
+ * @version 2.0.0 20th May 2018
+ * @author Tejas Cherukara
  */
 public class NotToBeCoupledException extends Exception {
     public NotToBeCoupledException(String message) {

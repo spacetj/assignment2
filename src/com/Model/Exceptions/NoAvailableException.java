@@ -1,7 +1,10 @@
 package com.Model.Exceptions;
 
 /**
- * Created by TJ on 26/4/18.
+ * NoAvailableException gets thrown when trying to make 2 adults a couple where one of them is already coupled.
+ *
+ * @version 2.0.0 20th May 2018
+ * @author Tejas Cherukara
  */
 public class NoAvailableException extends Exception{
     public NoAvailableException(String message) {

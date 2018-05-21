@@ -1,5 +1,6 @@
 package com.Services;
 
+import com.MiniNet;
 import com.Model.Adult;
 import com.Model.Exceptions.*;
 import com.Model.RelationType;
@@ -15,23 +16,50 @@ import java.util.stream.Collectors;
 import static com.Services.UserStore.ASSETS_FOLDER;
 
 /**
- * Created by TJ on 28/4/18.
+ * StoreUtils has common functions which cant be used to create a store of user objects.
+ *
+ * @version 2.0.0 20th May 2018
+ * @author Tejas Cherukara
  */
 public class StoreUtils {
 
+    /**
+     * Takes a list of list of string of users and relations and converts them into a
+     * list of users with relationships populated.
+     * @param usersString List of list of users
+     * @param relations List of list of relations
+     * @return List of Users
+     */
     public static List<User> parseUsers(List<List<String>> usersString, List<List<String>> relations) {
 
         List<List<String>> validChildren = new ArrayList<>();
 
+        // Create a list of optional Adults as not all users might be valid.
         List<Optional<User>> optionalUsers = usersString.stream().map(usr -> {
 
             if(usr.size() < 6){
-                System.out.println("Inconsistent data for "+usr.get(0));
+                System.out.println("Error: Inconsistent data for "+usr.get(0));
                 return Optional.<User>empty();
             }
 
-            if (Integer.parseInt(usr.get(4)) < UserFactory.YOUNG_ADULT) {
-                return parseChildData(relations, validChildren, usr);
+            Integer age = parseInt(usr.get(4));
+
+            if(!UserFactory.isAgeValid.test(age)){
+                try {
+                    throw new NoSuchAgeException("Error: Age not accepted.");
+                } catch (NoSuchAgeException e) {
+                    System.out.println("Error: "+usr.get(0)+" has an invalid age.");
+                    return Optional.<User>empty();
+                }
+            }
+
+            if (age <= UserFactory.YOUNG_ADULT) {
+                try {
+                    return parseChildData(relations, validChildren, usr);
+                } catch (NoParentException e) {
+                    System.out.println("Error: "+usr.get(0) + " does not have 2 parents");
+                    return Optional.<User>empty();
+                }
             }
 
             return Optional.ofNullable(
@@ -46,7 +74,17 @@ public class StoreUtils {
                 .collect(Collectors.toList());
 
         parseRelations(users, relations);
+        parseValidChildren(validChildren, users);
 
+        return users;
+    }
+
+    /**
+     * Parse valid child records, for each child, ensure there are 2 valid parent.
+     * @param validChildren list of valid children
+     * @param users list of all adults.
+     */
+    private static void parseValidChildren(List<List<String>> validChildren, List<User> users) {
         validChildren.forEach(o -> {
             Optional<Adult> parent1 = users.stream().filter(usr -> Objects.equals(usr.getName(), o.get(6))).map(usr -> (Adult)usr).findAny();
             Optional<Adult> parent2 = users.stream().filter(usr -> Objects.equals(usr.getName(), o.get(7))).map(usr -> (Adult)usr).findAny();
@@ -58,11 +96,14 @@ public class StoreUtils {
                 );
             }
         });
-
-        return users;
-
     }
 
+    /**
+     * Takes a list of users and a list of list of string of relations and
+     * adds the relations to the user objects.
+     * @param users users to add the relation to
+     * @param relations string relations between users which need to be added.
+     */
     private static void parseRelations(List<User> users, List<List<String>> relations) {
         relations.forEach(o -> {
             if(!Objects.equals(o.get(2), RelationType.PARENT)){
@@ -74,23 +115,30 @@ public class StoreUtils {
                     Relationship relationship = new Relationship(relation.get(), usr2.get());
                     try {
                         usr1.get().addRelation(relationship);
-                    } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeColleaguesException | NotToBeClassmastesException e) {
-                        System.out.println(e.getMessage());
+                    } catch (TooYoungException | NotToBeFriendsException | NotToBeCoupledException | NotToBeColleaguesException | NotToBeClassmastesException | NoAvailableException e) {
+                        System.out.println("Error: "+e.getMessage());
                     }
                 }
             }
         });
     }
 
-    private static Optional<User> parseChildData(List<List<String>> relations, List<List<String>> validChildren, List<String> usr) {
+    /**
+     * Takes adult usrs, and relation, checks if the child record is valid and add them to valid children arraylist.
+     * @param relations list of all relations
+     * @param validChildren list of all children with 2 valid adults
+     * @param usr list of adults
+     * @return Always returns empty but valid children are added to valid children list so that it be post processed.
+     * @throws NoParentException
+     */
+    private static Optional<User> parseChildData(List<List<String>> relations, List<List<String>> validChildren, List<String> usr) throws NoParentException {
         List<List<String>> relatedParents = relations.stream()
                 .filter(rel -> Objects.equals(rel.get(2), RelationType.PARENT))
                 .filter(rel -> Objects.equals(rel.get(0), usr.get(0)) || Objects.equals(rel.get(1), usr.get(0)))
                 .collect(Collectors.toList());
 
         if (relatedParents.size() < 2) {
-            System.out.println(usr.get(0) + " does not have 2 parents");
-            return Optional.<User>empty();
+            throw new NoParentException("Only has one parent");
         }
 
         relatedParents.forEach(o -> {
@@ -105,7 +153,16 @@ public class StoreUtils {
         return Optional.empty();
     }
 
-    static List<List<String>> readFile(String fileName) throws IOException {
+    /**
+     * Take a file name and returns a list of list of string.
+     * First splits the files contents by newline character.
+     * Then split the character by space.
+     * New lines and a few " are trimed.
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    public static List<List<String>> readFile(String fileName) throws IOException {
 
         List<String> lines= Files.readAllLines(Paths.get(ASSETS_FOLDER+fileName));
 
@@ -114,9 +171,23 @@ public class StoreUtils {
                     StringTokenizer tokenizer = new StringTokenizer(o,",");
                     List<String> data = new ArrayList<>();
                     while(tokenizer.hasMoreTokens()){
-                        data.add(tokenizer.nextToken().trim());
+                        data.add(tokenizer.nextToken()
+                                .replaceAll("[”“\"]", "").trim());
                     }
                     return data;
                 }).collect(Collectors.toList());
+    }
+
+    /**
+     * Checks if the input is an integer.
+     * @param value Number string
+     * @return
+     */
+    public static Integer parseInt(String value) {
+        try{
+            return Integer.parseInt(value);
+        } catch(NumberFormatException e) {
+            return Integer.MIN_VALUE;
+        }
     }
 }
